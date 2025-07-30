@@ -283,7 +283,7 @@ function startTrip() {
   intervalID = setInterval(fetchPosition, 300000); // 300,000 ms = 5 minutes
 }
 
-function stopTrip() {
+async function stopTrip() {
   if (intervalID !== null) {
     clearInterval(intervalID);
     intervalID = null;
