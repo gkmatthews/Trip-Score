@@ -86,8 +86,8 @@
         <th>Time</th>
         <th>Latitude</th>
         <th>Longitude</th>
-        <th>Temp (°C)</th>
-        <th>Wind (km/h)</th>
+        <th>Temp (°F)</th>
+        <th>Wind (mph)</th>
         <th>Wind Dir</th>
         <th>Rel. Wind Angle</th>
       </tr>
@@ -117,8 +117,8 @@ async function fetchWeather(lat, lon) {
     const data = await res.json();
     const cw = data.current_weather;
     return {
-      temperature: cw.temperature,
-      windSpeed: cw.windspeed,
+      temperature: cw.temperature * 9/5 + 32, // °F
+      windSpeed: cw.windspeed * 0.621371,     // mph
       windDirection: cw.winddirection
     };
   } catch (e) {
@@ -132,7 +132,7 @@ function calculateImpacts(dataPoints) {
 
   let tempSum = 0;
   let windSum = 0;
-  const idealTemp = 20; // °C
+  const idealTemp = 68; // °F instead of 20°C
 
   for (const point of dataPoints) {
     const tempDiff = point.weather.temperature - idealTemp;
@@ -143,7 +143,7 @@ function calculateImpacts(dataPoints) {
 
     if (point.windAngleRelative !== null && point.weather.windSpeed !== null) {
       const angleDeg = point.windAngleRelative;
-      const windSpeed = point.weather.windSpeed * 0.621371; // km/h to mph
+      const windSpeed = point.weather.windSpeed; // already in mph
       const W_scaled = windSpeed / 10;
       const angleRad = angleDeg * Math.PI / 180;
 
