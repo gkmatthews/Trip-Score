@@ -374,7 +374,7 @@ function renderDataTable(dataPoints) {
       <td>${new Date(point.timestamp).toLocaleTimeString()}</td>
       <td>${point.latitude.toFixed(4)}</td>
       <td>${point.longitude.toFixed(4)}</td>
-      <td>${point.weather?.temperature ?? '–'}</td>
+      <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
       <td>${point.weather ? (point.weather.windSpeed * 0.621371).toFixed(1) : '–'}</td>
       <td>${point.weather?.windDirection ?? '–'}</td>
       <td>${point.windAngleRelative !== null ? point.windAngleRelative.toFixed(1) : '–'}</td>
