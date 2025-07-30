@@ -250,7 +250,10 @@ function startTrip() {
   stopBtn.disabled = false;
   updateStatus('Starting trip and fetching initial weather...');
 
-  watchID = navigator.geolocation.watchPosition(onPosition, (err) => {
+let intervalID = null;
+
+function fetchPosition() {
+  navigator.geolocation.getCurrentPosition(onPosition, (err) => {
     updateStatus('Error getting location: ' + err.message);
   }, {
     enableHighAccuracy: true,
@@ -259,10 +262,31 @@ function startTrip() {
   });
 }
 
-async function stopTrip() {
-  if (watchID !== null) {
-    navigator.geolocation.clearWatch(watchID);
-    watchID = null;
+function startTrip() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser');
+    return;
+  }
+
+  tripData = [];
+  lastFetchTime = 0;
+  resultsEl.style.display = 'none';
+  tempScoreEl.textContent = '';
+  windScoreEl.textContent = '';
+  totalScoreEl.textContent = '';
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  updateStatus('Starting trip and fetching initial weather...');
+
+  // Fetch immediately, then every 5 minutes
+  fetchPosition();
+  intervalID = setInterval(fetchPosition, 300000); // 300,000 ms = 5 minutes
+}
+
+function stopTrip() {
+  if (intervalID !== null) {
+    clearInterval(intervalID);
+    intervalID = null;
   }
   stopBtn.disabled = true;
   startBtn.disabled = false;
