@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trip Weather Score</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0; padding: 1rem;
+      background: #f7f9fc;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh;
+      color: #222;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.7rem 1.2rem;
+      font-size: 1.1rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 0.6rem;
+      background: #0077ff;
+      color: white;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      transition: background 0.3s ease;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    #results {
+      margin-top: 1.5rem;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      max-width: 320px;
+      width: 100%;
+      text-align: center;
+    }
+    .score {
+      font-size: 1.3rem;
+      margin: 0.5rem 0;
+    }
+    .label {
+      font-weight: 600;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Trip Weather Impact Score</h1>
+
+<button id="startBtn">Start Trip</button>
+<button id="stopBtn" disabled>Stop Trip</button>
+
+<div id="status">Waiting to start...</div>
+
+<div id="results" style="display:none;">
+  <div><span class="label">Temperature Score:</span> <span id="tempScore"></span></div>
+  <div><span class="label">Wind Score:</span> <span id="windScore"></span></div>
+  <div class="score"><strong>Trip Score (–1000 to +1000):</strong> <span id="totalScore"></span></div>
+</div>
+
+<script>
+let watchID = null;
+let tripData = [];
+let lastFetchTime = 0;
+
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const statusEl = document.getElementById('status');
+const resultsEl = document.getElementById('results');
+const tempScoreEl = document.getElementById('tempScore');
+const windScoreEl = document.getElementById('windScore');
+const totalScoreEl = document.getElementById('totalScore');
+
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Weather fetch failed');
+    const data = await res.json();
+    const cw = data.current_weather;
+    return {
+      temperature: cw.temperature,
+      windSpeed: cw.windspeed,
+      windDirection: cw.winddirection
+    };
+  } catch (e) {
+    console.warn('Weather fetch error:', e);
+    return null;
+  }
+}
+
+function calculateImpacts(dataPoints) {
+  if (!dataPoints.length) return { tempImpact: 0, windImpact: 0 };
+
+  let tempSum = 0;
+  let windSum = 0;
+  const idealTemp = 20; // °C
+
+  for (const point of dataPoints) {
+    const tempDiff = point.weather.temperature - idealTemp;
+    let tempImpact = Math.max(-1, Math.min(1, tempDiff / 15));
+    tempSum += tempImpact;
+
+    let windImpact = 0;
+
+    if (point.windAngleRelative !== null && point.weather.windSpeed !== null) {
+      const angleDeg = point.windAngleRelative;
+      const windSpeed = point.weather.windSpeed * 0.621371; // km/h to mph
+      const W_scaled = windSpeed / 10;
+      const angleRad = angleDeg * Math.PI / 180;
+
+      let windFactor = -Math.cos(angleRad) * W_scaled;
+
+      if (windSpeed > 10) {
+        const penaltyFactor = (windSpeed - 10) / 20;
+        const crosswindInfluence = Math.abs(Math.sin(angleRad));
+        windFactor -= crosswindInfluence * penaltyFactor;
+      }
+
+      windImpact = windFactor;
+    }
+
+    windSum += windImpact;
+  }
+
+  return {
+    tempImpact: tempSum / dataPoints.length,
+    windImpact: windSum / dataPoints.length
+  };
+}
+
+function getBearing(lat1, lon1, lat2, lon2) {
+  const toRad = deg => deg * Math.PI / 180;
+  const toDeg = rad => rad * 180 / Math.PI;
+
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+            Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  let brng = toDeg(Math.atan2(y, x));
+  return (brng + 360) % 360;
+}
+
+function updateStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+async function onPosition(pos) {
+  const now = Date.now();
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+
+  let bearing = null;
+  if (tripData.length > 0) {
+    const prev = tripData[tripData.length - 1];
+    bearing = getBearing(prev.latitude, prev.longitude, lat, lon);
+  }
+
+  if (!lastFetchTime || now - lastFetchTime >= 300000) {
+    if (lastFetchTime && (now - lastFetchTime < 30000)) {
+      updateStatus('Waiting to fetch weather (too soon)...');
+    } else {
+      updateStatus('Fetching weather data...');
+      const weather = await fetchWeather(lat, lon);
+      if (weather) {
+        let windAngleRelative = null;
+        if (bearing !== null) {
+          const windGoingDir = (weather.windDirection + 180) % 360;
+          let diff = Math.abs(windGoingDir - bearing);
+          if (diff > 180) diff = 360 - diff;
+          windAngleRelative = diff;
+        }
+
+        tripData.push({
+          timestamp: now,
+          latitude: lat,
+          longitude: lon,
+          weather: weather,
+          windAngleRelative: windAngleRelative
+        });
+        lastFetchTime = now;
+        updateStatus('Weather data collected.');
+      } else {
+        updateStatus('Failed to fetch weather data.');
+      }
+    }
+  } else {
+    updateStatus('Tracking GPS location...');
+    tripData.push({
+      timestamp: now,
+      latitude: lat,
+      longitude: lon,
+      weather: null,
+      windAngleRelative: null
+    });
+  }
+}
+
+function startTrip() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser');
+    return;
+  }
+
+  tripData = [];
+  lastFetchTime = 0;
+  resultsEl.style.display = 'none';
+  tempScoreEl.textContent = '';
+  windScoreEl.textContent = '';
+  totalScoreEl.textContent = '';
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  updateStatus('Starting trip and fetching initial weather...');
+
+  watchID = navigator.geolocation.watchPosition(onPosition, (err) => {
+    updateStatus('Error getting location: ' + err.message);
+  }, {
+    enableHighAccuracy: true,
+    maximumAge: 1000,
+    timeout: 10000
+  });
+}
+
+async function stopTrip() {
+  if (watchID !== null) {
+    navigator.geolocation.clearWatch(watchID);
+    watchID = null;
+  }
+  stopBtn.disabled = true;
+  startBtn.disabled = false;
+  updateStatus('Finalizing trip data...');
+
+  const now = Date.now();
+  if (!lastFetchTime || (now - lastFetchTime > 30000)) {
+    if (tripData.length > 0) {
+      const lastPoint = tripData[tripData.length - 1];
+      updateStatus('Fetching final weather data...');
+      const weather = await fetchWeather(lastPoint.latitude, lastPoint.longitude);
+      if (weather) {
+        tripData.push({
+          timestamp: now,
+          latitude: lastPoint.latitude,
+          longitude: lastPoint.longitude,
+          weather: weather,
+          windAngleRelative: lastPoint.windAngleRelative
+        });
+      }
+    }
+  }
+
+  const impacts = calculateImpacts(tripData);
+  const tempScore = impacts.tempImpact * 500;
+  const windScore = impacts.windImpact * 500;
+  const tripScore = tempScore + windScore;
+
+  tempScoreEl.textContent = tempScore.toFixed(0);
+  windScoreEl.textContent = windScore.toFixed(0);
+  totalScoreEl.textContent = tripScore.toFixed(0);
+
+  resultsEl.style.display = 'block';
+  updateStatus('Trip complete.');
+}
+
+startBtn.onclick = startTrip;
+stopBtn.onclick = stopTrip;
+</script>
+
+</body>
+</html>
