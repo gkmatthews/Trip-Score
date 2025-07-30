@@ -78,6 +78,24 @@
   <div class="score"><strong>Trip Score (–1000 to +1000):</strong> <span id="totalScore"></span></div>
 </div>
 
+<div id="dataTable" style="display:none; margin-top:2rem; max-width:100%; overflow-x:auto;">
+  <h3>Data Points</h3>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width:100%; max-width:800px;">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Temp (°C)</th>
+        <th>Wind (km/h)</th>
+        <th>Wind Dir</th>
+        <th>Rel. Wind Angle</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
 <script>
 let watchID = null;
 let tripData = [];
