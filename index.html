@@ -262,6 +262,15 @@ function fetchPosition() {
   });
 }
 
+
+
+
+
+
+
+  
+// START TRIP ///////////////////////////////////////////////////////////////////////////
+
 function startTrip() {
   if (!navigator.geolocation) {
     alert('Geolocation is not supported by your browser');
@@ -283,11 +292,21 @@ function startTrip() {
   intervalID = setInterval(fetchPosition, 300000); // 300,000 ms = 5 minutes
 }
 
-async function stopTrip() {
+
+
+
+
+
+  
+//STOP TRIP////////////////////////////////////////////////////////////////////////////////
+  
+function stopTrip() {
   if (intervalID !== null) {
     clearInterval(intervalID);
     intervalID = null;
   }
+
+  
   stopBtn.disabled = true;
   startBtn.disabled = false;
   updateStatus('Finalizing trip data...');
