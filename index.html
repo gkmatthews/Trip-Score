@@ -250,23 +250,25 @@ async function stopTrip() {
   startBtn.disabled = false;
   updateStatus('Finalizing trip data...');
 
-  const now = Date.now();
-  if (!lastFetchTime || (now - lastFetchTime > 30000)) {
-    if (tripData.length > 0) {
-      const lastPoint = tripData[tripData.length - 1];
-      updateStatus('Fetching final weather data...');
-      const weather = await fetchWeather(lastPoint.latitude, lastPoint.longitude);
-      if (weather) {
-        tripData.push({
-          timestamp: now,
-          latitude: lastPoint.latitude,
-          longitude: lastPoint.longitude,
-          weather: weather,
-          windAngleRelative: lastPoint.windAngleRelative
-        });
-      }
+const lastPoint = tripData[tripData.length - 1];
+if (lastPoint && !lastPoint.weather) {
+  updateStatus('Fetching final weather data...');
+  const weather = await fetchWeather(lastPoint.latitude, lastPoint.longitude);
+  if (weather) {
+    lastPoint.weather = weather;
+
+    // Update wind angle if bearing is known
+    if (tripData.length >= 2) {
+      const prev = tripData[tripData.length - 2];
+      const bearing = getBearing(prev.latitude, prev.longitude, lastPoint.latitude, lastPoint.longitude);
+      const windGoingDir = (weather.windDirection + 180) % 360;
+      let diff = Math.abs(windGoingDir - bearing);
+      if (diff > 180) diff = 360 - diff;
+      lastPoint.windAngleRelative = diff;
     }
   }
+}
+
 
   const impacts = calculateImpacts(tripData);
   const tempScore = impacts.tempImpact * 500;
