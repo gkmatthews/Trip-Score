@@ -389,6 +389,23 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
   });
 });
+
+
+
+  
+//INSTAL BUTTON PROMPT//////////////////////////////////////////////////////////////////////
+
+const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isInStandaloneMode = 'standalone' in window.navigator && window.navigator.standalone;
+const hasSeenInstallPrompt = localStorage.getItem('seenInstallPrompt');
+
+if (isIOS && !isInStandaloneMode && !hasSeenInstallPrompt) {
+  setTimeout(() => {
+    alert("Install TripScore as an app: Tap the Share button, then choose 'Add to Home Screen'.");
+    localStorage.setItem('seenInstallPrompt', 'true');
+  }, 2000);
+}
+
 </script>
 
 </body>
