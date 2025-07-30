@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="TripScore">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0077ff">
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="TripScore" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0077ff" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trip Weather Score</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
-      margin: 0; padding: 1rem;
+      margin: 0;
+      padding: 1rem;
       background: #f7f9fc;
-      display: flex; flex-direction: column; align-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
       color: #222;
     }
@@ -61,6 +65,26 @@
       font-weight: 600;
       color: #444;
     }
+    #dataTable {
+      display: none;
+      margin-top: 2rem;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    #dataTable table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 800px;
+    }
+    #dataTable th, #dataTable td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+    #dataTable th {
+      background-color: #eee;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -78,9 +102,9 @@
   <div class="score"><strong>Trip Score (–1000 to +1000):</strong> <span id="totalScore"></span></div>
 </div>
 
-<div id="dataTable" style="display:none; margin-top:2rem; max-width:100%; overflow-x:auto;">
+<div id="dataTable">
   <h3>Data Points</h3>
-  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width:100%; max-width:800px;">
+  <table>
     <thead>
       <tr>
         <th>Time</th>
@@ -98,6 +122,7 @@
 
 <script>
 let watchID = null;
+let intervalID = null;
 let tripData = [];
 let lastFetchTime = 0;
 
@@ -132,9 +157,11 @@ function calculateImpacts(dataPoints) {
 
   let tempSum = 0;
   let windSum = 0;
-  const idealTemp = 68; // °F instead of 20°C
+  const idealTemp = 68; // °F
 
   for (const point of dataPoints) {
+    if (!point.weather) continue;
+
     const tempDiff = point.weather.temperature - idealTemp;
     let tempImpact = Math.max(-1, Math.min(1, tempDiff / 15));
     tempSum += tempImpact;
@@ -143,7 +170,7 @@ function calculateImpacts(dataPoints) {
 
     if (point.windAngleRelative !== null && point.weather.windSpeed !== null) {
       const angleDeg = point.windAngleRelative;
-      const windSpeed = point.weather.windSpeed; // already in mph
+      const windSpeed = point.weather.windSpeed;
       const W_scaled = windSpeed / 10;
       const angleRad = angleDeg * Math.PI / 180;
 
@@ -183,6 +210,16 @@ function updateStatus(msg) {
   statusEl.textContent = msg;
 }
 
+function fetchPosition() {
+  navigator.geolocation.getCurrentPosition(onPosition, (err) => {
+    updateStatus('Error getting location: ' + err.message);
+  }, {
+    enableHighAccuracy: true,
+    maximumAge: 1000,
+    timeout: 10000
+  });
+}
+
 async function onPosition(pos) {
   const now = Date.now();
   const lat = pos.coords.latitude;
@@ -194,7 +231,7 @@ async function onPosition(pos) {
     bearing = getBearing(prev.latitude, prev.longitude, lat, lon);
   }
 
-  if (!lastFetchTime || now - lastFetchTime >= 300000) {
+  if (!lastFetchTime || now - lastFetchTime >= 300000) { // 5 minutes
     if (lastFetchTime && (now - lastFetchTime < 30000)) {
       updateStatus('Waiting to fetch weather (too soon)...');
     } else {
@@ -250,85 +287,38 @@ function startTrip() {
   stopBtn.disabled = false;
   updateStatus('Starting trip and fetching initial weather...');
 
-let intervalID = null;
-
-function fetchPosition() {
-  navigator.geolocation.getCurrentPosition(onPosition, (err) => {
-    updateStatus('Error getting location: ' + err.message);
-  }, {
-    enableHighAccuracy: true,
-    maximumAge: 1000,
-    timeout: 10000
-  });
-}
-
-
-
-
-
-
-
-  
-// START TRIP ///////////////////////////////////////////////////////////////////////////
-
-function startTrip() {
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser');
-    return;
-  }
-
-  tripData = [];
-  lastFetchTime = 0;
-  resultsEl.style.display = 'none';
-  tempScoreEl.textContent = '';
-  windScoreEl.textContent = '';
-  totalScoreEl.textContent = '';
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
-  updateStatus('Starting trip and fetching initial weather...');
-
   // Fetch immediately, then every 5 minutes
   fetchPosition();
-  intervalID = setInterval(fetchPosition, 300000); // 300,000 ms = 5 minutes
+  intervalID = setInterval(fetchPosition, 300000); // 5 minutes
 }
 
-
-
-
-
-
-  
-//STOP TRIP////////////////////////////////////////////////////////////////////////////////
-  
-function stopTrip() {
+async function stopTrip() {
   if (intervalID !== null) {
     clearInterval(intervalID);
     intervalID = null;
   }
 
-  
   stopBtn.disabled = true;
   startBtn.disabled = false;
   updateStatus('Finalizing trip data...');
 
-const lastPoint = tripData[tripData.length - 1];
-if (lastPoint && !lastPoint.weather) {
-  updateStatus('Fetching final weather data...');
-  const weather = await fetchWeather(lastPoint.latitude, lastPoint.longitude);
-  if (weather) {
-    lastPoint.weather = weather;
+  const lastPoint = tripData[tripData.length - 1];
+  if (lastPoint && !lastPoint.weather) {
+    updateStatus('Fetching final weather data...');
+    const weather = await fetchWeather(lastPoint.latitude, lastPoint.longitude);
+    if (weather) {
+      lastPoint.weather = weather;
 
-    // Update wind angle if bearing is known
-    if (tripData.length >= 2) {
-      const prev = tripData[tripData.length - 2];
-      const bearing = getBearing(prev.latitude, prev.longitude, lastPoint.latitude, lastPoint.longitude);
-      const windGoingDir = (weather.windDirection + 180) % 360;
-      let diff = Math.abs(windGoingDir - bearing);
-      if (diff > 180) diff = 360 - diff;
-      lastPoint.windAngleRelative = diff;
+      if (tripData.length >= 2) {
+        const prev = tripData[tripData.length - 2];
+        const bearing = getBearing(prev.latitude, prev.longitude, lastPoint.latitude, lastPoint.longitude);
+        const windGoingDir = (weather.windDirection + 180) % 360;
+        let diff = Math.abs(windGoingDir - bearing);
+        if (diff > 180) diff = 360 - diff;
+        lastPoint.windAngleRelative = diff;
+      }
     }
   }
-}
 
   renderDataTable(tripData);
 
@@ -345,25 +335,45 @@ if (lastPoint && !lastPoint.weather) {
   updateStatus('Trip complete.');
 }
 
+function renderDataTable(dataPoints) {
+  const tableBody = document.getElementById('tableBody');
+  tableBody.innerHTML = '';
+
+  for (const point of dataPoints) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${new Date(point.timestamp).toLocaleTimeString()}</td>
+      <td>${point.latitude.toFixed(4)}</td>
+      <td>${point.longitude.toFixed(4)}</td>
+      <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
+      <td>${point.weather ? point.weather.windSpeed.toFixed(1) : '–'}</td>
+      <td>${point.weather?.windDirection ?? '–'}</td>
+      <td>${point.windAngleRelative !== null ? point.windAngleRelative.toFixed(1) : '–'}</td>
+    `;
+    tableBody.appendChild(row);
+  }
+
+  document.getElementById('dataTable').style.display = 'block';
+}
+
 startBtn.onclick = startTrip;
 stopBtn.onclick = stopTrip;
-  
-  // Register service worker for PWA
+
+// Register service worker for PWA
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
     .then(() => console.log('✅ Service Worker Registered'))
     .catch(err => console.warn('❌ SW registration failed:', err));
 }
 
+// PWA installation prompt handler
 let deferredPrompt;
 
-window.addEventListener('beforeinstallprompt', e => console.log('beforeinstallprompt fired'));
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   console.log('✅ Install prompt saved');
 
-  // You can now show a custom "Install" button
   const installBtn = document.createElement('button');
   installBtn.textContent = 'Install App';
   installBtn.style.cssText = 'margin-top:1rem; padding:1rem;';
@@ -379,34 +389,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
   });
 });
-
-function renderDataTable(dataPoints) {
-  const tableBody = document.getElementById('tableBody');
-  tableBody.innerHTML = ''; // Clear previous data
-
-  for (const point of dataPoints) {
-    const row = document.createElement('tr');
-
-    const formatCell = (val) => val !== null && val !== undefined ? val.toFixed(2) : '–';
-
-    row.innerHTML = `
-      <td>${new Date(point.timestamp).toLocaleTimeString()}</td>
-      <td>${point.latitude.toFixed(4)}</td>
-      <td>${point.longitude.toFixed(4)}</td>
-      <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
-      <td>${point.weather ? (point.weather.windSpeed * 0.621371).toFixed(1) : '–'}</td>
-      <td>${point.weather?.windDirection ?? '–'}</td>
-      <td>${point.windAngleRelative !== null ? point.windAngleRelative.toFixed(1) : '–'}</td>
-    `;
-
-    tableBody.appendChild(row);
-  }
-
-  document.getElementById('dataTable').style.display = 'block';
-}
-
-  
 </script>
 
 </body>
 </html>
+
