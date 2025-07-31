@@ -340,18 +340,28 @@ function fetchPosition() {
   });
 }
 
+
+
+
+
+
+
+
+//ON POSITION//////////////////////////////////////////////////////////////////////////////////////
+  
 async function onPosition(pos) {
   const now = Date.now();
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
-  updateMap(lat, lon);
+  
+  if (!map) initializeMap(lat, lon);
+  updateMapWithBreadcrumb(lat, lon);
 
   const weather = await fetchWeather(lat, lon);
     if (weather) {
       updateLiveWeatherDisplay(lat, lon, weather);
       // Also push to your tripData array or update scores here
       }
-
 
 //if (weather) {
   //document.getElementById('liveWeather').textContent =
@@ -603,38 +613,49 @@ maybeShowIosPrompt();
 
 
 
+  
+
 //MAP////////////////////////////////////////////////////////////////////////////////////////////////////
 
-let map, marker;
+let map, breadcrumbLine;
+let breadcrumbCoords = [];
 
-function initMap(lat, lon) {
+function initializeMap(lat, lon) {
   map = L.map('map', {
-    zoomControl: false,      // Hide zoom controls to simplify UI
-    dragging: false,         // Disable dragging to prevent panning
-    scrollWheelZoom: false,  // Disable zooming with mouse wheel or touchpad
-    doubleClickZoom: false,  // Disable zoom on double-click
-    boxZoom: false,          // Disable zoom box selection
-    keyboard: false          // Disable keyboard controls
-  }).setView([lat, lon], 13);
+    center: [lat, lon],
+    zoom: 13,
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    tap: false,
+    touchZoom: false,
+    attributionControl: false,
+    inertia: false,
+  });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '',
-    maxZoom: 15,             // Limit max zoom to reduce tile loading
-    minZoom: 10              // Limit min zoom for consistency
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
   }).addTo(map);
 
-  marker = L.marker([lat, lon]).addTo(map);
+  // Add a simple polyline for breadcrumbs
+  breadcrumbLine = L.polyline([], { color: 'blue', weight: 2 }).addTo(map);
 }
 
-// Call this each time position updates
-function updateMap(lat, lon) {
-  if (!map) {
-    initMap(lat, lon);
-  } else {
-    map.setView([lat, lon]);
-    marker.setLatLng([lat, lon]);
-  }
+// Call this each time your GPS updates:
+function updateMapWithBreadcrumb(lat, lon) {
+  const newPoint = [lat, lon];
+  breadcrumbCoords.push(newPoint);
+
+  // Limit number of points to reduce memory usage
+  if (breadcrumbCoords.length > 100) breadcrumbCoords.shift();
+
+  breadcrumbLine.setLatLngs(breadcrumbCoords);
+  map.setView(newPoint); // Keep map centered on current location
 }
+
 
 
 
