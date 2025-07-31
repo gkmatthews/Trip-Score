@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TripScore" />
@@ -116,6 +120,8 @@
 
 <!-- <div id="liveWeather" style="margin-top: 10px; font-weight: bold;"></div> -->
 
+<div id="map" style="height: 200px; width: 100%; margin-top: 10px;"></div>
+  
 <div id="dataTable">
   <h3>Data Points</h3>
   <table>
@@ -316,6 +322,7 @@ async function onPosition(pos) {
   const now = Date.now();
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
+  updateMap(lat, lon);
 
 //if (weather) {
   //document.getElementById('liveWeather').textContent =
@@ -556,6 +563,43 @@ function maybeShowIosPrompt() {
 
 // Call it when the app loads
 maybeShowIosPrompt();
+
+
+
+
+
+
+//MAP////////////////////////////////////////////////////////////////////////////////////////////////////
+let map, marker;
+
+function initMap(lat, lon) {
+  map = L.map('map', {
+    zoomControl: false,      // Hide zoom controls to simplify UI
+    dragging: false,         // Disable dragging to prevent panning
+    scrollWheelZoom: false,  // Disable zooming with mouse wheel or touchpad
+    doubleClickZoom: false,  // Disable zoom on double-click
+    boxZoom: false,          // Disable zoom box selection
+    keyboard: false          // Disable keyboard controls
+  }).setView([lat, lon], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '',
+    maxZoom: 15,             // Limit max zoom to reduce tile loading
+    minZoom: 10              // Limit min zoom for consistency
+  }).addTo(map);
+
+  marker = L.marker([lat, lon]).addTo(map);
+}
+
+// Call this each time position updates
+function updateMap(lat, lon) {
+  if (!map) {
+    initMap(lat, lon);
+  } else {
+    map.setView([lat, lon]);
+    marker.setLatLng([lat, lon]);
+  }
+}
 
 
 
