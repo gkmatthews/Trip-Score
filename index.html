@@ -207,42 +207,62 @@ function calculateImpacts(dataPoints) {
 
   let tempSum = 0;
   let windSum = 0;
-  const idealTemp = 68; // °F
+  let count = 0;
+  const idealTemp = 70; // more reasonable neutral temp
+  const minInterval = 4.5 * 60 * 1000; // 4.5 minutes in ms
+  let lastTime = 0;
 
   for (const point of dataPoints) {
-    if (!point.weather) continue;
+    if (!point.weather || !point.timestamp) continue;
 
-    const tempDiff = point.weather.temperature - idealTemp;
-    let tempImpact = Math.max(-1, Math.min(1, tempDiff / 15));
+    // Only calculate once every ~5 minutes to avoid duplicates
+    const timestamp = new Date(point.timestamp).getTime();
+    if (lastTime && (timestamp - lastTime < minInterval)) continue;
+    lastTime = timestamp;
+
+    const temp = point.weather.temperature;
+    let tempImpact = 0;
+
+    // Temp: allow neutral zone between 60°F–80°F
+    if (temp < 60) {
+      tempImpact = (temp - 60) / 20;  // Gradual negative
+    } else if (temp > 80) {
+      tempImpact = (temp - 80) / 20;  // Gradual negative
+    }
+
+    // Clamp between -1 and 1
+    tempImpact = Math.max(-1, Math.min(1, tempImpact));
     tempSum += tempImpact;
 
+    // Wind calculation
     let windImpact = 0;
-
     if (point.windAngleRelative !== null && point.weather.windSpeed !== null) {
       const angleDeg = point.windAngleRelative;
       const windSpeed = point.weather.windSpeed;
-      const W_scaled = windSpeed / 10;
+
       const angleRad = angleDeg * Math.PI / 180;
+      const headwind = -Math.cos(angleRad) * (windSpeed / 15); // gentler scale
+      const crosswind = Math.abs(Math.sin(angleRad)) * ((windSpeed - 10) / 30); // less harsh
 
-      let windFactor = -Math.cos(angleRad) * W_scaled;
-
-      if (windSpeed > 10) {
-        const penaltyFactor = (windSpeed - 10) / 20;
-        const crosswindInfluence = Math.abs(Math.sin(angleRad));
-        windFactor -= crosswindInfluence * penaltyFactor;
-      }
-
-      windImpact = windFactor;
+      windImpact = headwind - crosswind;
     }
 
     windSum += windImpact;
+    count++;
   }
 
+  if (count === 0) return { tempImpact: 0, windImpact: 0 };
+
   return {
-    tempImpact: tempSum / dataPoints.length,
-    windImpact: windSum / dataPoints.length
+    tempImpact: +(tempSum / count).toFixed(2),
+    windImpact: +(windSum / count).toFixed(2)
   };
 }
+
+
+
+
+  
 
 
 
