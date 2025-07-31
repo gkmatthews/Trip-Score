@@ -606,6 +606,17 @@ function initializeMap(lat, lon) {
   breadcrumbLine = L.polyline([], { color: 'blue', weight: 2 }).addTo(map);
 }
 
+function addBreadcrumb(lat, lon) {
+  L.circleMarker([lat, lon], {
+    radius: 10,          // Larger size
+    fillColor: "#0077ff",
+    color: "#0044cc",
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.8
+  }).addTo(map);
+}
+  
 // Call this each time your GPS updates:
 function updateMapWithBreadcrumb(lat, lon) {
   const newPoint = [lat, lon];
