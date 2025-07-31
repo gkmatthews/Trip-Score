@@ -404,19 +404,9 @@ async function stopTrip() {
       }
     }
   }
-
-
-
-
-
-
-// RENDER TABLE //////////////////////////////////////////////////////////////////////////////////
-
-  renderDataTable(tripData);
-
   const impacts = calculateImpacts(tripData);
-  const tempScore = impacts.tempImpact * 500;
-  const windScore = impacts.windImpact * 500;
+  const tempScore = impacts.tempImpact * 1000;
+  const windScore = impacts.windImpact * 1000;
   const tripScore = tempScore + windScore;
 
   tempScoreEl.textContent = tempScore.toFixed(0);
@@ -427,10 +417,20 @@ async function stopTrip() {
   updateStatus('Trip complete.');
 }
 
+
+
+
+
+
+  
+// RENDER TABLE //////////////////////////////////////////////////////////////////////////////////
+  
 function renderDataTable(dataPoints) {
   const tableBody = document.getElementById('tableBody');
   tableBody.innerHTML = '';
 
+  renderDataTable(tripData);
+  
   for (const point of dataPoints) {
     const row = document.createElement('tr');
     row.innerHTML = `
