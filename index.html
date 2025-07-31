@@ -113,7 +113,6 @@
         <th>Temp (°F)</th>
         <th>Wind (mph)</th>
         <th>Wind Dir</th>
-        <th>Rel. Wind Angle</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -134,6 +133,11 @@ const tempScoreEl = document.getElementById('tempScore');
 const windScoreEl = document.getElementById('windScore');
 const totalScoreEl = document.getElementById('totalScore');
 
+
+
+
+//FETCH WEATHER/////////////////////////////////////////////////////////////////
+  
 async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
   try {
@@ -152,6 +156,13 @@ async function fetchWeather(lat, lon) {
   }
 }
 
+
+
+
+
+
+//CALCULATE IMPACTS///////////////////////////////////////////////////////////////////
+  
 function calculateImpacts(dataPoints) {
   if (!dataPoints.length) return { tempImpact: 0, windImpact: 0 };
 
@@ -194,6 +205,13 @@ function calculateImpacts(dataPoints) {
   };
 }
 
+
+
+
+
+
+//FETCH GPS LOCATION////////////////////////////////////////////////////////////////////////
+  
 function getBearing(lat1, lon1, lat2, lon2) {
   const toRad = deg => deg * Math.PI / 180;
   const toDeg = rad => rad * 180 / Math.PI;
@@ -271,6 +289,14 @@ async function onPosition(pos) {
   }
 }
 
+
+
+
+
+
+
+//START TRIP//////////////////////////////////////////////////////////////////////////
+  
 function startTrip() {
   if (!navigator.geolocation) {
     alert('Geolocation is not supported by your browser');
@@ -292,6 +318,13 @@ function startTrip() {
   intervalID = setInterval(fetchPosition, 300000); // 5 minutes
 }
 
+
+
+
+
+
+//STOP TRIP///////////////////////////////////////////////////////////////////////////////
+  
 async function stopTrip() {
   if (intervalID !== null) {
     clearInterval(intervalID);
@@ -319,6 +352,13 @@ async function stopTrip() {
       }
     }
   }
+
+
+
+
+
+
+// RENDER TABLE //////////////////////////////////////////////////////////////////////////////////
 
   renderDataTable(tripData);
 
@@ -359,14 +399,23 @@ function renderDataTable(dataPoints) {
 startBtn.onclick = startTrip;
 stopBtn.onclick = stopTrip;
 
-// Register service worker for PWA
+
+
+
+  
+// Register service worker for PWA ////////////////////////////////////////////////////////////
+  
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
     .then(() => console.log('✅ Service Worker Registered'))
     .catch(err => console.warn('❌ SW registration failed:', err));
 }
 
-// PWA installation prompt handler
+
+
+
+  
+// PWA installation prompt handler ////////////////////////////////////////////////////////////
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
