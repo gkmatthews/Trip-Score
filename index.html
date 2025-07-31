@@ -315,8 +315,10 @@ async function onPosition(pos) {
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
 
+if (weather) {
   document.getElementById('liveWeather').textContent =
   `Temp: ${weather.temperature.toFixed(1)}°F, Wind: ${weather.windSpeed.toFixed(1)} mph`;
+}
   
   let bearing = null;
   if (tripData.length > 0) {
