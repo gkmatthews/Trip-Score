@@ -114,7 +114,7 @@
   <div class="score"><strong>Trip Score (–1000 to +1000):</strong> <span id="totalScore"></span></div>
 </div>
 
-<div id="liveWeather" style="margin-top: 10px; font-weight: bold;"></div>
+<!-- <div id="liveWeather" style="margin-top: 10px; font-weight: bold;"></div> -->
 
 <div id="dataTable">
   <h3>Data Points</h3>
@@ -317,10 +317,10 @@ async function onPosition(pos) {
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
 
-if (weather) {
-  document.getElementById('liveWeather').textContent =
-  `Temp: ${weather.temperature.toFixed(1)}°F, Wind: ${weather.windSpeed.toFixed(1)} mph`;
-}
+//if (weather) {
+  //document.getElementById('liveWeather').textContent =
+  //`Temp: ${weather.temperature.toFixed(1)}°F, Wind: ${weather.windSpeed.toFixed(1)} mph`;
+//}
   
   let bearing = null;
   if (tripData.length > 0) {
