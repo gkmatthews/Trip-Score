@@ -120,7 +120,11 @@
 
 <!-- <div id="liveWeather" style="margin-top: 10px; font-weight: bold;"></div> -->
 
-<div id="liveWeather" style="margin: 1em 0; font-weight: bold;"></div>
+<div id="liveWeather" style="display: none; margin: 1em 0; padding: 1em; background-color: #f0f8ff; border: 1px solid #ccc; border-radius: 8px; font-family: sans-serif;">
+  <h3 style="margin-top: 0; color: #2a5d9f;">Live Weather</h3>
+  <p><strong>Temperature:</strong> <span id="liveTemp">--</span> °F</p>
+  <p><strong>Wind:</strong> <span id="liveWind">--</span> mph (<span id="liveWindDir">--</span>°)</p>
+</div>
   
 <div id="map" style="height: 200px; width: 100%; margin-top: 10px;"></div>
   
@@ -664,13 +668,16 @@ function updateMapWithBreadcrumb(lat, lon) {
 
  //LIVE WEATHER OUTPUT//////////////////////////////////////////////////////////////
 function updateLiveWeatherDisplay(lat, lon, weather) {
-  if (!weather) return;
+  const liveWeather = document.getElementById('liveWeather');
+  const liveTemp = document.getElementById('liveTemp');
+  const liveWind = document.getElementById('liveWind');
+  const liveWindDir = document.getElementById('liveWindDir');
 
-  const weatherText = `📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} — 🌡️ ${weather.temperature.toFixed(1)}°F, 💨 ${weather.windSpeed.toFixed(1)} mph (${weather.windDirection}°)`;
-  const liveEl = document.getElementById("liveWeather");
-  if (liveEl) {
-    liveEl.textContent = weatherText;
-  }
+  liveTemp.textContent = weather.temperature.toFixed(1);
+  liveWind.textContent = weather.windSpeed.toFixed(1);
+  liveWindDir.textContent = weather.windDirection || '--';
+
+  liveWeather.style.display = 'block';
 }
 
 
