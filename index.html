@@ -222,6 +222,9 @@ async function fetchFromOpenMeteo(lat, lon) {
     console.warn('Open-Meteo fetch error:', e);
     return null;
   }
+
+  console.log("Fetched weather:", weather);
+  
 }
 
 
@@ -312,6 +315,9 @@ async function onPosition(pos) {
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
 
+  document.getElementById('liveWeather').textContent =
+  `Temp: ${weather.temperature.toFixed(1)}°F, Wind: ${weather.windSpeed.toFixed(1)} mph`;
+  
   let bearing = null;
   if (tripData.length > 0) {
     const prev = tripData[tripData.length - 1];
