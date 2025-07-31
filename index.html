@@ -335,8 +335,8 @@ async function onPosition(pos) {
 
         tripData.push({
           timestamp: now,
-          latitude: lat,
-          longitude: lon,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
           weather: weather,
           windAngleRelative: windAngleRelative
         });
@@ -356,6 +356,9 @@ async function onPosition(pos) {
       windAngleRelative: null
     });
   }
+
+console.log('Trip data length:', tripData.length);
+  
 }
 
 
@@ -384,7 +387,8 @@ function startTrip() {
 
   // Fetch immediately, then every 5 minutes
   fetchPosition();
-  intervalID = setInterval(fetchPosition, 300000); // 5 minutes
+  intervalID = setInterval(fetchPosition, 15000); // 15 seconds for testing
+  //intervalID = setInterval(fetchPosition, 300000); // 5 minutes
 }
 
 
