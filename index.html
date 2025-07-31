@@ -457,7 +457,6 @@ function renderDataTable(dataPoints) {
       <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
       <td>${point.weather ? point.weather.windSpeed.toFixed(1) : '–'}</td>
       <td>${point.weather?.windDirection ?? '–'}</td>
-      <td>${point.windAngleRelative !== null ? point.windAngleRelative.toFixed(1) : '–'}</td>
     `;
     tableBody.appendChild(row);
   }
