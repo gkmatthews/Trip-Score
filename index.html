@@ -120,6 +120,8 @@
 
 <!-- <div id="liveWeather" style="margin-top: 10px; font-weight: bold;"></div> -->
 
+<div id="liveWeather" style="margin: 1em 0; font-weight: bold;"></div>
+  
 <div id="map" style="height: 200px; width: 100%; margin-top: 10px;"></div>
   
 <div id="dataTable">
@@ -253,6 +255,7 @@ async function fetchWeather(lat, lon) {
     console.warn('Open-Meteo fetch error:', e);
     return null;
   }
+  
 }
 
 
@@ -342,6 +345,13 @@ async function onPosition(pos) {
   const lat = pos.coords.latitude;
   const lon = pos.coords.longitude;
   updateMap(lat, lon);
+
+  const weather = await fetchWeather(lat, lon);
+    if (weather) {
+      updateLiveWeatherDisplay(lat, lon, weather);
+      // Also push to your tripData array or update scores here
+      }
+
 
 //if (weather) {
   //document.getElementById('liveWeather').textContent =
@@ -621,6 +631,21 @@ function updateMap(lat, lon) {
   }
 }
 
+
+
+
+
+
+ //LIVE WEATHER OUTPUT//////////////////////////////////////////////////////////////
+function updateLiveWeatherDisplay(lat, lon, weather) {
+  if (!weather) return;
+
+  const weatherText = `📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} — 🌡️ ${weather.temperature.toFixed(1)}°F, 💨 ${weather.windSpeed.toFixed(1)} mph (${weather.windDirection}°)`;
+  const liveEl = document.getElementById("liveWeather");
+  if (liveEl) {
+    liveEl.textContent = weatherText;
+  }
+}
 
 
   
