@@ -85,6 +85,18 @@
       background-color: #eee;
       font-weight: 600;
     }
+
+    #iosPrompt {
+      font-family: sans-serif;
+      font-size: 0.95em;
+      animation: slideUp 0.3s ease-in-out;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    
   </style>
 </head>
 <body>
@@ -119,6 +131,11 @@
   </table>
 </div>
 
+<div id="iosPrompt" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #fef3c7; padding: 1em; text-align: center; border-top: 1px solid #fcd34d; z-index: 9999;">
+  <span>Install TripScore: Tap <strong>Share</strong> then <strong>Add to Home Screen</strong>.</span>
+  <button onclick="dismissIosPrompt()" style="margin-left: 1em; background: #fcd34d; border: none; padding: 0.5em 1em; border-radius: 5px;">Dismiss</button>
+</div>
+  
 <script>
 let watchID = null;
 let intervalID = null;
@@ -414,7 +431,9 @@ async function stopTrip() {
   totalScoreEl.textContent = tripScore.toFixed(0);
 
   resultsEl.style.display = 'block';
+  renderDataTable(tripData);
   updateStatus('Trip complete.');
+  
 }
 
 
@@ -428,8 +447,6 @@ async function stopTrip() {
 function renderDataTable(dataPoints) {
   const tableBody = document.getElementById('tableBody');
   tableBody.innerHTML = '';
-
-  renderDataTable(tripData);
   
   for (const point of dataPoints) {
     const row = document.createElement('tr');
@@ -507,6 +524,29 @@ if (isIOS && !isInStandaloneMode && !hasSeenInstallPrompt) {
   }, 2000);
 }
 
+function dismissIosPrompt() {
+  document.getElementById('iosPrompt').style.display = 'none';
+  localStorage.setItem('seenInstallPrompt', 'true');
+}
+
+function maybeShowIosPrompt() {
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isInStandaloneMode = 'standalone' in window.navigator && window.navigator.standalone;
+  const hasSeenInstallPrompt = localStorage.getItem('seenInstallPrompt');
+
+  if (isIOS && !isInStandaloneMode && !hasSeenInstallPrompt) {
+    setTimeout(() => {
+      document.getElementById('iosPrompt').style.display = 'block';
+    }, 2000);
+  }
+}
+
+// Call it when the app loads
+maybeShowIosPrompt();
+
+
+
+  
 </script>
 
 </body>
