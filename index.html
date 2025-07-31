@@ -167,79 +167,11 @@ const totalScoreEl = document.getElementById('totalScore');
 
 
 
+
+
+
+  
 //FETCH WEATHER/////////////////////////////////////////////////////////////////
-  
-//async function fetchWeather(lat, lon) {
- // const isInUSA = await checkIfInUSA(lat, lon);
-
-//  if (isInUSA) {
- //   return await fetchFromNWS(lat, lon);
-//  } else {
-//    return await fetchFromOpenMeteo(lat, lon);
-//  }
-//}
-
-// Check if lat/lon is within the bounding box of the USA
-//async function checkIfInUSA(lat, lon) {
-  // Rough bounding box for continental USA
-//  return lat >= 24.396308 && lat <= 49.384358 && lon >= -125.0 && lon <= -66.93457;
-//}
-
-// Use the National Weather Service API
-//async function fetchFromNWS(lat, lon) {
-//  try {
-  //  const pointsUrl = `https://api.weather.gov/points/${lat},${lon}`;
- //   const pointsRes = await fetch(pointsUrl);
-  //  if (!pointsRes.ok) throw new Error('Failed to fetch NWS grid points');
- //   const pointsData = await pointsRes.json();
- //   const obsUrl = pointsData.properties.observationStations;
-
-//    const obsRes = await fetch(obsUrl);
-  //  if (!obsRes.ok) throw new Error('Failed to fetch NWS stations');
-  //  const stations = await obsRes.json();
-  //  const firstStation = stations.features[0].properties.stationIdentifier;
-
- //   const latestObsUrl = `https://api.weather.gov/stations/${firstStation}/observations/latest`;
-  //  const latestRes = await fetch(latestObsUrl);
-   // if (!latestRes.ok) throw new Error('Failed to fetch NWS observation');
-  //  const latestData = await latestRes.json();
-
-  //  const tempC = latestData.properties.temperature.value;
-  //  const windSpeedMps = latestData.properties.windSpeed.value;
-  //  const windDir = latestData.properties.windDirection.value;
-
- //   return {
-  //    temperature: +(tempC * 9/5 + 32).toFixed(1),
-  //    windSpeed: +(windSpeedMps * 2.23694).toFixed(1),
- //     windDirection: windDir ?? 0
- //   };
-//  } catch (e) {
- //   console.warn('NWS fetch error, falling back to Open-Meteo:', e);
-  //  return await fetchFromOpenMeteo(lat, lon);
-//  }
-//}
-
-// Use Open-Meteo for international users or fallback
-//async function fetchFromOpenMeteo(lat, lon) {
- // try {
-  //  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
-   // const res = await fetch(url);
-   // if (!res.ok) throw new Error('Weather fetch failed');
- //   const data = await res.json();
-  //  const cw = data.current_weather;
-   // return {
-     // temperature: +(cw.temperature * 9/5 + 32).toFixed(1),
-    //  windSpeed: +(cw.windspeed * 0.621371).toFixed(1),
-    //  windDirection: cw.winddirection
- //   };
-//  } catch (e) {
-  //  console.warn('Open-Meteo fetch error:', e);
-   // return null;
- // }
-
-//  console.log("Fetched weather:", weather);
-  
-//}
 
 async function fetchWeather(lat, lon) {
   try {
@@ -267,6 +199,7 @@ async function fetchWeather(lat, lon) {
 
 
 
+  
 //CALCULATE IMPACTS///////////////////////////////////////////////////////////////////
   
 function calculateImpacts(dataPoints) {
@@ -315,6 +248,7 @@ function calculateImpacts(dataPoints) {
 
 
 
+  
 
 //FETCH GPS LOCATION////////////////////////////////////////////////////////////////////////
   
@@ -361,16 +295,18 @@ async function onPosition(pos) {
   if (!map) initializeMap(lat, lon);
   updateMapWithBreadcrumb(lat, lon);
 
-  const weather = await fetchWeather(lat, lon);
-    if (weather) {
-      updateLiveWeatherDisplay(lat, lon, weather);
+ // const weather = await fetchWeather(lat, lon);
+   // if (weather) {
+     // updateLiveWeatherDisplay(lat, lon, weather);
       // Also push to your tripData array or update scores here
-      }
+      //}
 
-//if (weather) {
-  //document.getElementById('liveWeather').textContent =
-  //`Temp: ${weather.temperature.toFixed(1)}°F, Wind: ${weather.windSpeed.toFixed(1)} mph`;
-//}
+  let weather = null;
+  try {
+    weather = await fetchWeather(lat, lon);
+  } catch (e) {
+    console.warn('Failed to fetch weather:', e);
+  }
   
   let bearing = null;
   if (tripData.length > 0) {
@@ -378,21 +314,29 @@ async function onPosition(pos) {
     bearing = getBearing(prev.latitude, prev.longitude, lat, lon);
   }
 
-  if (!lastFetchTime || now - lastFetchTime >= 300000) { // 5 minutes
-    if (lastFetchTime && (now - lastFetchTime < 30000)) {
-      updateStatus('Waiting to fetch weather (too soon)...');
-    } else {
-      updateStatus('Fetching weather data...');
-      const weather = await fetchWeather(lat, lon);
-      if (weather) {
-        let windAngleRelative = null;
-        if (bearing !== null) {
-          const windGoingDir = (weather.windDirection + 180) % 360;
-          let diff = Math.abs(windGoingDir - bearing);
-          if (diff > 180) diff = 360 - diff;
-          windAngleRelative = diff;
-        }
+//  if (!lastFetchTime || now - lastFetchTime >= 300000) { // 5 minutes
+ //   if (lastFetchTime && (now - lastFetchTime < 30000)) {
+ //     updateStatus('Waiting to fetch weather (too soon)...');
+//    } else {
+//      updateStatus('Fetching weather data...');
+//      const weather = await fetchWeather(lat, lon);
+  //    if (weather) {
+ //      let windAngleRelative = null;
+  //      if (bearing !== null) {
+    //      const windGoingDir = (weather.windDirection + 180) % 360;
+    //      let diff = Math.abs(windGoingDir - bearing);
+   //       if (diff > 180) diff = 360 - diff;
+    //      windAngleRelative = diff;
+   //     }
 
+  let windAngleRelative = null;
+  if (bearing !== null && weather && weather.windDirection !== undefined) {
+    const windGoingDir = (weather.windDirection + 180) % 360;
+    let diff = Math.abs(windGoingDir - bearing);
+    if (diff > 180) diff = 360 - diff;
+    windAngleRelative = diff;
+  }
+  
         tripData.push({
           timestamp: now,
           latitude: pos.coords.latitude,
@@ -400,26 +344,31 @@ async function onPosition(pos) {
           weather: weather,
           windAngleRelative: windAngleRelative
         });
-        lastFetchTime = now;
-        updateStatus('Weather data collected.');
-      } else {
-        updateStatus('Failed to fetch weather data.');
-      }
-    }
-  } else {
-    updateStatus('Tracking GPS location...');
-    tripData.push({
-      timestamp: now,
-      latitude: lat,
-      longitude: lon,
-      weather: null,
-      windAngleRelative: null
-    });
-  }
 
-console.log('Trip data length:', tripData.length);
-  
+  updateLiveWeatherDisplay(lat, lon, weather); // update UI if you want
+  updateStatus('Weather data collected and position updated.');
 }
+  
+   //     lastFetchTime = now;
+    //    updateStatus('Weather data collected.');
+ //     } else {
+  //      updateStatus('Failed to fetch weather data.');
+  //   }
+ //   }
+//  } else {
+ //   updateStatus('Tracking GPS location...');
+ //   tripData.push({
+ //     timestamp: now,
+  //    latitude: lat,
+  //    longitude: lon,
+  //    weather: null,
+  //    windAngleRelative: null
+  //  });
+//  }
+
+//console.log('Trip data length:', tripData.length);
+  
+//}
 
 
 
@@ -519,14 +468,23 @@ function renderDataTable(dataPoints) {
   
   for (const point of dataPoints) {
     const row = document.createElement('tr');
+    //row.innerHTML = `
+    //  <td>${new Date(point.timestamp).toLocaleTimeString()}</td>
+    //  <td>${point.latitude.toFixed(4)}</td>
+    //  <td>${point.longitude.toFixed(4)}</td>
+    //  <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
+     // <td>${point.weather ? point.weather.windSpeed.toFixed(1) : '–'}</td>
+     // <td>${point.weather?.windDirection ?? '–'}</td>
+  //  `;
     row.innerHTML = `
       <td>${new Date(point.timestamp).toLocaleTimeString()}</td>
       <td>${point.latitude.toFixed(4)}</td>
       <td>${point.longitude.toFixed(4)}</td>
       <td>${point.weather?.temperature !== undefined ? point.weather.temperature.toFixed(1) : '–'}</td>
-      <td>${point.weather ? point.weather.windSpeed.toFixed(1) : '–'}</td>
-      <td>${point.weather?.windDirection ?? '–'}</td>
+      <td>${point.weather?.windSpeed !== undefined ? point.weather.windSpeed.toFixed(1) : '–'}</td>
+      <td>${point.weather?.windDirection !== undefined ? point.weather.windDirection : '–'}</td>
     `;
+
     tableBody.appendChild(row);
   }
 
