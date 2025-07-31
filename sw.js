@@ -19,3 +19,24 @@ self.addEventListener('fetch', event => {
     )
   );
 });
+
+
+
+// sw.js (simplified snippet for caching map tiles)
+const CACHE_NAME = 'tripscore-cache-v1';
+const MAP_TILE_REGEX = /^https:\/\/[abc]\.tile\.openstreetmap\.org\/.*/;
+
+self.addEventListener('fetch', event => {
+  if (MAP_TILE_REGEX.test(event.request.url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache =>
+        cache.match(event.request).then(response =>
+          response || fetch(event.request).then(networkResponse => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          })
+        )
+      )
+    );
+  }
+});
