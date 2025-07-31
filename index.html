@@ -435,6 +435,11 @@ function startTrip() {
   fetchPosition();
   intervalID = setInterval(fetchPosition, 15000); // 15 seconds for testing
   //intervalID = setInterval(fetchPosition, 300000); // 5 minutes
+
+  fetchWeather();
+  intervalID = setInterval(fetchWeather, 15000); // 15 seconds for testing
+  //intervalID = setInterval(fetchPosition, 300000); // 5 minutes
+  
 }
 
 
